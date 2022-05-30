@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../model/the_user.dart';
+import 'home.dart';
 
 class Register extends StatefulWidget {
   const Register({Key? key}) : super(key: key);
@@ -10,12 +15,11 @@ class Register extends StatefulWidget {
 class _RegisterState extends State<Register> {
 
   // Controllers
-  TextEditingController _controllerName = TextEditingController();
-  TextEditingController _controllerEmail = TextEditingController();
-  TextEditingController _controllerPassword = TextEditingController();
+  final TextEditingController _controllerName = TextEditingController();
+  final TextEditingController _controllerEmail = TextEditingController();
+  final TextEditingController _controllerPassword = TextEditingController();
   String _errorMessage = '';
 
-/**/
   _validateFields() {
     String name = _controllerName.text;
     String email = _controllerEmail.text;
@@ -25,17 +29,22 @@ class _RegisterState extends State<Register> {
 
       if ( email.isNotEmpty && email.contains('@') ) {
 
-        if ( password.isNotEmpty ) {
+        if ( password.length >= 6 ) {
 
           setState(() {
             _errorMessage = '';
           });
 
-          _registerUser();
+          TheUser user = TheUser();
+          user.name = name;
+          user.email = email;
+          user.password = password;
+
+          _registerUser(user);
 
         } else {
           setState(() {
-            _errorMessage = 'Preencha a senha.';
+            _errorMessage = 'Preencha a senha. Pelo menos 6 caracteres.';
           });
         }
 
@@ -53,7 +62,33 @@ class _RegisterState extends State<Register> {
 
   }
 
-  _registerUser() {
+  _registerUser(TheUser user) async {
+
+    await Firebase.initializeApp();
+
+    FirebaseAuth auth = FirebaseAuth.instance;
+
+    auth.createUserWithEmailAndPassword(email: user.email, password: user.password)
+    .then((value) {
+      print('User ${value.user!.email} cadastrado com sucesso!');
+      setState(() {
+        _errorMessage = 'Usuário cadastrado com sucesso!';
+      });
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Home()));
+      FirebaseFirestore db = FirebaseFirestore.instance;
+      db.collection('users')
+      .doc(auth.currentUser!.uid)
+      .set(user.toMap());
+    })
+    .catchError((err) {
+      print('O erro do app foi $err');
+      setState(() {
+        _errorMessage = 'Deu erro!';
+      });
+    });
+
 
   }
 
