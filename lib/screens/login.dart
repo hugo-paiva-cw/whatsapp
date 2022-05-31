@@ -53,8 +53,7 @@ class _LoginState extends State<Login> {
         .signInWithEmailAndPassword(email: user.email, password: user.password)
         .then((value) {
       print(value.user!.email.toString());
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Home()));
+      Navigator.pushReplacementNamed(context, '/home');
     }).catchError((err) {
       print('deu erro $err');
       setState(() {
@@ -70,8 +69,9 @@ class _LoginState extends State<Login> {
     User? loggedUser = auth.currentUser;
 
     if (loggedUser != null) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Home()));
+
+      Navigator.pushReplacementNamed(context, '/home');
+
     }
   }
 

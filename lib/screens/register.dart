@@ -74,9 +74,8 @@ class _RegisterState extends State<Register> {
       setState(() {
         _errorMessage = 'Usuário cadastrado com sucesso!';
       });
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => Home()));
+      // Navigator.pushReplacementNamed( context, '/home');
+      Navigator.pushNamedAndRemoveUntil( context, '/home', (_) => false);
       FirebaseFirestore db = FirebaseFirestore.instance;
       db.collection('users')
       .doc(auth.currentUser!.uid)

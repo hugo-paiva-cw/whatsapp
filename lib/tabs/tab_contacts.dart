@@ -20,7 +20,7 @@ class _ContactsState extends State<Contacts> {
     Conversation('José Renato', 'iae',
         'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil4.jpg?alt=media&token=149dcb21-cd9f-44cc-a110-b65e3044e183'),
     Conversation('Jamilton Damasceno', 'Curso novo vem aí',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil5.jpg?alt=media&token=81f2f481-3b23-4a15-a433-1d471a67e675'),
+        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspo.com/o/profile%2Fperfil5.jpg?alt=media&token=81f2f481-3b23-4a15-a433-1d471a67e675'),
   ];
 
   @override
