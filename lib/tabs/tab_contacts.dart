@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
-import '../model/conversation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../model/the_user.dart';
 
 class Contacts extends StatefulWidget {
   const Contacts({Key? key}) : super(key: key);
@@ -10,38 +13,92 @@ class Contacts extends StatefulWidget {
 }
 
 class _ContactsState extends State<Contacts> {
-  List<Conversation> listOfConversations = [
-    Conversation('Ana Clara', 'oie sumido',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil1.jpg?alt=media&token=329c38db-7750-49f0-968d-818cd253c79f'),
-    Conversation('Pedro Silva', 'comprei aquele ssd novo',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil2.jpg?alt=media&token=c5133363-f454-4cd9-be74-aa6abd95a4dd'),
-    Conversation('Marcela Almeida', 'foi na casa da Gabi',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil3.jpg?alt=media&token=3f1b7873-5d85-4446-a62c-0565b488d7d6'),
-    Conversation('José Renato', 'iae',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil4.jpg?alt=media&token=149dcb21-cd9f-44cc-a110-b65e3044e183'),
-    Conversation('Jamilton Damasceno', 'Curso novo vem aí',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspo.com/o/profile%2Fperfil5.jpg?alt=media&token=81f2f481-3b23-4a15-a433-1d471a67e675'),
-  ];
+  String? _idLoggedUser;
+  String? _emailLoggedUser;
+
+  Future<List<TheUser>> _getContacts() async {
+    Firebase.initializeApp();
+    FirebaseFirestore db = FirebaseFirestore.instance;
+
+    QuerySnapshot querySnapshot = await db.collection('users').get();
+
+    List<TheUser> usersList = [];
+    for (DocumentSnapshot item in querySnapshot.docs) {
+      var data = jsonEncode(item.data());
+      Map<String, dynamic> valueData = jsonDecode(data);
+
+      if (valueData['email'] == _emailLoggedUser) continue;
+
+      TheUser user = TheUser();
+      user.idUser = item.id;
+      user.email = valueData['email'];
+      user.name = valueData['name'];
+      user.imageUrl = valueData['imageUrl'];
+
+      usersList.add(user);
+    }
+
+    return usersList;
+  }
+
+  _getUserData() async {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User loggedUser = auth.currentUser!;
+    _idLoggedUser = loggedUser.uid;
+    _emailLoggedUser = loggedUser.email;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserData();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: listOfConversations.length,
-        itemBuilder: (context, index) {
-          Conversation conversation = listOfConversations[index];
+    return FutureBuilder<List<TheUser>>(
+      future: _getContacts(),
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+            return Center(
+              child: Column(
+                children: const [
+                  Text('Carregando contatos'),
+                  CircularProgressIndicator()
+                ],
+              ),
+            );
+          case ConnectionState.active:
+          case ConnectionState.done:
+            return ListView.builder(
+                itemCount: snapshot.data?.length,
+                itemBuilder: (context, index) {
+                  List<TheUser> itemsList = snapshot.data!;
+                  TheUser user = itemsList[index];
 
-          return ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            leading: CircleAvatar(
-              maxRadius: 30,
-              backgroundColor: Colors.grey,
-              backgroundImage: NetworkImage(conversation.pathPhoto),
-            ),
-            title: Text(
-              conversation.name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          );
-        });
+                  return ListTile(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/messages',
+                          arguments: user);
+                    },
+                    contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    leading: CircleAvatar(
+                        maxRadius: 30,
+                        backgroundColor: Colors.grey,
+                        backgroundImage: user.imageUrl != null
+                            ? NetworkImage(user.imageUrl)
+                            : null),
+                    title: Text(
+                      user.name,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                });
+        }
+      },
+    );
   }
 }

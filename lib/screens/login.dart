@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:whatsapp/screens/register.dart';
 
 import '../model/the_user.dart';
-import 'home.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -52,10 +51,9 @@ class _LoginState extends State<Login> {
     auth
         .signInWithEmailAndPassword(email: user.email, password: user.password)
         .then((value) {
-      print(value.user!.email.toString());
+
       Navigator.pushReplacementNamed(context, '/home');
     }).catchError((err) {
-      print('deu erro $err');
       setState(() {
         _errorMessage = 'Verifique seu email ou senha e tente novamente.';
       });
@@ -160,7 +158,7 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.only(top: 16),
                   child: Center(
                     child: Text(
                       _errorMessage,

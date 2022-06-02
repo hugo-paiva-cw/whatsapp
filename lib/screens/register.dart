@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../model/the_user.dart';
-import 'home.dart';
 
 class Register extends StatefulWidget {
   const Register({Key? key}) : super(key: key);
@@ -70,7 +69,6 @@ class _RegisterState extends State<Register> {
 
     auth.createUserWithEmailAndPassword(email: user.email, password: user.password)
     .then((value) {
-      print('User ${value.user!.email} cadastrado com sucesso!');
       setState(() {
         _errorMessage = 'Usuário cadastrado com sucesso!';
       });
@@ -82,7 +80,6 @@ class _RegisterState extends State<Register> {
       .set(user.toMap());
     })
     .catchError((err) {
-      print('O erro do app foi $err');
       setState(() {
         _errorMessage = 'Deu erro!';
       });

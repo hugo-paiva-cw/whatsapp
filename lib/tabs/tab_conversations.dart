@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../model/conversation.dart';
+import 'package:whatsapp/model/the_user.dart';
 
 class Conversations extends StatefulWidget {
   const Conversations({Key? key}) : super(key: key);
@@ -9,42 +13,119 @@ class Conversations extends StatefulWidget {
 }
 
 class _ConversationsState extends State<Conversations> {
-  List<Conversation> listOfConversations = [
-    Conversation('Ana Clara', 'oie sumido',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil1.jpg?alt=media&token=329c38db-7750-49f0-968d-818cd253c79f'),
-    Conversation('Pedro Silva', 'comprei aquele ssd novo',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil2.jpg?alt=media&token=c5133363-f454-4cd9-be74-aa6abd95a4dd'),
-    Conversation('Marcela Almeida', 'foi na casa da Gabi',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil3.jpg?alt=media&token=3f1b7873-5d85-4446-a62c-0565b488d7d6'),
-    Conversation('José Renato', 'iae',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil4.jpg?alt=media&token=149dcb21-cd9f-44cc-a110-b65e3044e183'),
-    Conversation('Jamilton Damasceno', 'Curso novo vem aí',
-        'https://firebasestorage.googleapis.com/v0/b/whatsapp-1ce1a.appspot.com/o/profile%2Fperfil5.jpg?alt=media&token=81f2f481-3b23-4a15-a433-1d471a67e675'),
-  ];
+  final _controller = StreamController<QuerySnapshot>.broadcast();
+  FirebaseFirestore db = FirebaseFirestore.instance;
+  late String _idLoggedUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserData();
+  }
+
+  Stream<QuerySnapshot>? _addConversationListener() {
+    final stream = db
+        .collection('conversations')
+        .doc(_idLoggedUser)
+        .collection('last_conversation')
+        .snapshots();
+
+    stream.listen((data) {
+      _controller.add(data);
+    });
+  }
+
+  _getUserData() async {
+    Firebase.initializeApp();
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User loggedUser = auth.currentUser!;
+    _idLoggedUser = loggedUser.uid;
+
+    _addConversationListener();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.close();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: listOfConversations.length,
-        itemBuilder: (context, index) {
-          Conversation conversation = listOfConversations[index];
+    return StreamBuilder<QuerySnapshot>(
+        stream: _controller.stream,
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+            case ConnectionState.waiting:
+              return Center(
+                child: Column(
+                  children: const [
+                    Text('Carregando mensagens'),
+                    CircularProgressIndicator()
+                  ],
+                ),
+              );
+            case ConnectionState.active:
+            case ConnectionState.done:
+              if (snapshot.hasError) {
+                return const Text('Erro ao carregar os dados!');
+              } else {
+                QuerySnapshot? querySnapshot = snapshot.data;
 
-          return ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            leading: CircleAvatar(
-              maxRadius: 30,
-              backgroundColor: Colors.grey,
-              backgroundImage: NetworkImage(conversation.pathPhoto),
-            ),
-            title: Text(
-              conversation.name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              conversation.message,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          );
+                if (querySnapshot?.docs.length == 0) {
+                  return const Center(
+                    child: Text(
+                      'Você nao tem nennuma mensagem ainda :(',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                    itemCount: querySnapshot!.docs.length,
+                    itemBuilder: (context, index) {
+                      List<DocumentSnapshot> conversations =
+                          querySnapshot.docs.toList();
+                      DocumentSnapshot item = conversations[index];
+
+                      String imageUrl = item['pathPhoto'];
+                      String type = item['messageType'];
+                      String message = item['message'];
+                      String name = item['name'];
+                      String idReceipt = item['idReceipt'];
+
+                      TheUser user = TheUser();
+                      user.name = name;
+                      user.imageUrl = imageUrl;
+                      user.idUser = idReceipt;
+
+                      return ListTile(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/messages',
+                              arguments: user);
+                        },
+                        contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        leading: CircleAvatar(
+                          maxRadius: 30,
+                          backgroundColor: Colors.grey,
+                          backgroundImage:
+                              imageUrl != null ? NetworkImage(imageUrl) : null,
+                        ),
+                        title: Text(
+                          name,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          type == 'text' ? message : 'Imagem...',
+                          style:
+                              const TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      );
+                    });
+              }
+          }
         });
   }
 }
