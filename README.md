@@ -1,6 +1,6 @@
 # whatsapp
 
-A new Flutter project.
+11th exercise-app with the objective of reproducing WhatsApp interface and funcionality of exchanging messages, images and displaing the last conversations with last message preview. Furthermore it allows to create many accounts, set name and profile picture and login automatically.
 
 ## Getting Started
 
